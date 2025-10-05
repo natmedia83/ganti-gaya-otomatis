@@ -1,0 +1,314 @@
+
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generator Konsep Animasi Objek</title>
+    <!-- Memuat Tailwind CSS untuk styling modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Menggunakan font Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        /* Custom scrollbar for better appearance */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a0a0a0;
+            border-radius: 10px;
+        }
+        .uploaded-img-preview {
+            max-height: 200px; /* Batasi tinggi pratinjau */
+            width: auto;
+            object-fit: contain;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-2xl bg-white shadow-2xl rounded-xl p-8 space-y-6">
+        <header class="text-center">
+            <h1 class="text-3xl font-extrabold text-indigo-700 mb-2">Generator Konsep Gerakan AI</h1>
+            <p class="text-gray-600">Unggah gambar dan deskripsikan gerakan yang Anda inginkan.</p>
+        </header>
+
+        <!-- Area Input -->
+        <div class="space-y-4">
+            
+            <!-- Unggah Gambar -->
+            <div class="space-y-2 p-4 border border-gray-300 rounded-lg bg-indigo-50">
+                <label class="block text-sm font-medium text-gray-700">1. Unggah Gambar Objek:</label>
+                <input type="file" id="imageUpload" accept="image/*" class="w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-white p-2">
+                <div id="uploadPreview" class="uploaded-img-preview mx-auto mt-2 hidden text-center">
+                    <img id="uploadedImage" class="uploaded-img-preview mx-auto border border-gray-200" src="" alt="Pratinjau Gambar Diunggah">
+                </div>
+            </div>
+
+            <!-- Deskripsi Gerakan -->
+            <label for="prompt" class="block text-sm font-medium text-gray-700">2. Deskripsikan Gerakan yang Diinginkan:</label>
+            <textarea id="prompt" rows="2" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150" placeholder="Contoh: 'Buat gajah ini sedang melompat tinggi' atau 'Ubah ekspresinya menjadi tersenyum sambil berkedip'"></textarea>
+            
+            <button id="generateBtn" 
+                    class="w-full flex items-center justify-center px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 transform active:scale-95 disabled:bg-indigo-300"
+                    disabled>
+                <span id="buttonText">Harap Unggah Gambar & Deskripsikan Gerakan</span>
+                <svg id="loadingSpinner" class="animate-spin h-5 w-5 text-white ml-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Area Hasil -->
+        <div id="resultArea" class="space-y-4 pt-4">
+            <h2 class="text-xl font-bold text-gray-800">3. Hasil Visualisasi Gerakan:</h2>
+            <div id="imageContainer" class="min-h-[300px] bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden relative">
+                <p id="placeholderText" class="text-gray-500 p-4 text-center">Gambar hasil AI akan muncul di sini.</p>
+                <img id="generatedImage" src="" alt="Gambar Animasi yang Dihasilkan AI" class="w-full h-full object-contain hidden">
+            </div>
+            
+            <button id="downloadBtn" 
+                    class="w-full px-6 py-3 border border-transparent text-base font-semibold rounded-lg shadow-md text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 transform active:scale-95 hidden"
+                    onclick="downloadImage()">
+                Unduh Gambar Konsep Gerakan
+            </button>
+
+            <!-- Catatan Penting -->
+            <div class="text-sm p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500 text-yellow-800">
+                <p class="font-semibold">⚠️ Catatan Mengenai Simulasi Animasi:</p>
+                <p>Aplikasi ini menggunakan model **AI Gambar-ke-Gambar** (<span class="font-mono">gemini-2.5-flash-image-preview</span>) untuk memodifikasi gambar yang diunggah agar terlihat sedang bergerak. Ini adalah simulasi konsep; ini tidak menghasilkan video animasi penuh (MP4/GIF).</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const uploadedImage = document.getElementById('uploadedImage');
+        const uploadPreview = document.getElementById('uploadPreview');
+        const promptInput = document.getElementById('prompt');
+        const generateBtn = document.getElementById('generateBtn');
+        const buttonText = document.getElementById('buttonText');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const placeholderText = document.getElementById('placeholderText');
+        const generatedImage = document.getElementById('generatedImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        const apiKey = ""; 
+        let uploadedBase64Image = null;
+        let uploadedMimeType = null;
+
+        // --- Fungsi Utilitas ---
+
+        /**
+         * Mengaktifkan/menonaktifkan tombol Hasilkan berdasarkan ketersediaan gambar dan prompt.
+         */
+        function checkInputs() {
+            const isReady = uploadedBase64Image && promptInput.value.trim().length > 0;
+            generateBtn.disabled = !isReady;
+            if (isReady) {
+                buttonText.textContent = "Hasilkan Konsep Gerakan Baru";
+            } else if (uploadedBase64Image) {
+                buttonText.textContent = "Masukkan Deskripsi Gerakan";
+            } else {
+                buttonText.textContent = "Harap Unggah Gambar & Deskripsikan Gerakan";
+            }
+        }
+
+        /**
+         * Konversi Base64 ke ArrayBuffer/Blob untuk diunduh.
+         */
+        function base64ToBlob(base64Data, contentType = 'image/png') {
+            const sliceSize = 1024;
+            const byteCharacters = atob(base64Data);
+            const byteArrays = [];
+
+            for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                const slice = byteCharacters.slice(offset, offset + sliceSize);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                byteArrays.push(byteArray);
+            }
+            return new Blob(byteArrays, { type: contentType });
+        }
+
+        /**
+         * Mengunduh gambar yang dihasilkan.
+         */
+        function downloadImage() {
+            const imageUrl = generatedImage.src;
+            if (imageUrl.startsWith('data:image/')) {
+                const base64Data = imageUrl.split(',')[1];
+                const mimeType = imageUrl.split(':')[1].split(';')[0] || 'image/png';
+                const blob = base64ToBlob(base64Data, mimeType);
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'konsep_gerakan_' + Date.now() + '.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // --- Event Listener Unggah Gambar ---
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                uploadedBase64Image = null;
+                uploadedMimeType = null;
+                uploadPreview.classList.add('hidden');
+                checkInputs();
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImage.src = e.target.result;
+                uploadPreview.classList.remove('hidden');
+                uploadedMimeType = file.type;
+                
+                // Ekstrak hanya data base64 (hilangkan prefix 'data:image/...')
+                uploadedBase64Image = e.target.result.split(',')[1]; 
+                checkInputs();
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Listener untuk prompt
+        promptInput.addEventListener('input', checkInputs);
+
+
+        // --- Fungsi Utama AI Generasi Gambar ---
+
+        /**
+         * Memanggil API Gemini untuk menghasilkan gambar (Image-to-Image).
+         */
+        async function fetchImageWithRetry(userPrompt, base64Image, mimeType) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+            const maxRetries = 3;
+            let delay = 1000;
+
+            const payload = { 
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: userPrompt },
+                        {
+                            inlineData: {
+                                mimeType: mimeType,
+                                data: base64Image
+                            }
+                        }
+                    ]
+                }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                },
+            };
+
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Kesalahan API: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    const base64Data = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                    if (base64Data) {
+                        return base64Data;
+                    } else {
+                        throw new Error("Respons AI tidak valid atau tidak mengandung data gambar.");
+                    }
+
+                } catch (error) {
+                    console.error(`Percobaan ${i + 1} gagal:`, error.message);
+                    if (i === maxRetries - 1) {
+                        throw new Error("Gagal menghasilkan gambar setelah beberapa kali percobaan. Silakan coba lagi.");
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; 
+                }
+            }
+        }
+
+        /**
+         * Mengatur status UI (loading, error, atau sukses).
+         */
+        function setUIState(isLoading, message = '') {
+            generateBtn.disabled = isLoading || !uploadedBase64Image || !promptInput.value.trim();
+            imageUpload.disabled = isLoading;
+            promptInput.disabled = isLoading;
+            downloadBtn.classList.add('hidden');
+            
+            if (isLoading) {
+                buttonText.textContent = "Sedang Memodifikasi Gerakan...";
+                loadingSpinner.classList.remove('hidden');
+                placeholderText.textContent = 'Sedang diproses... Harap tunggu (ini mungkin memakan waktu hingga 30 detik).';
+                placeholderText.classList.remove('text-red-500');
+                placeholderText.classList.remove('hidden');
+                generatedImage.classList.add('hidden');
+            } else {
+                checkInputs(); // Panggil ini untuk mengatur teks tombol
+                loadingSpinner.classList.add('hidden');
+                
+                if (message) {
+                    placeholderText.textContent = message;
+                    placeholderText.classList.remove('hidden');
+                    placeholderText.classList.add('text-red-500');
+                    generatedImage.classList.add('hidden');
+                } else {
+                    placeholderText.classList.add('hidden');
+                    generatedImage.classList.remove('hidden');
+                    downloadBtn.classList.remove('hidden');
+                }
+            }
+        }
+
+        // --- Event Listener Utama ---
+        generateBtn.addEventListener('click', async () => {
+            const prompt = promptInput.value.trim();
+            
+            if (!uploadedBase64Image || !prompt) {
+                // Menggunakan placeholder text UI alih-alih alert()
+                placeholderText.textContent = "Harap unggah gambar dan masukkan deskripsi gerakan.";
+                placeholderText.classList.remove('hidden');
+                placeholderText.classList.add('text-red-500');
+                return;
+            }
+
+            setUIState(true);
+
+            try {
+                const base64Data = await fetchImageWithRetry(prompt, uploadedBase64Image, uploadedMimeType);
+                const imageUrl = `data:${uploadedMimeType};base64,${base64Data}`;
+                generatedImage.src = imageUrl;
+                setUIState(false);
+            } catch (error) {
+                console.error("Kesalahan Fatal:", error);
+                setUIState(false, error.message);
+            }
+        });
+        
+        // Inisialisasi status input saat dimuat
+        checkInputs();
+    </script>
+
+</body>
+</html>
